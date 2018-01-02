@@ -9,6 +9,7 @@ function TestRail(options) {
   this.host = options.host;
   this.user = options.user;
   this.password = options.password;
+  this.retries = options.retries;
 
   this.uri = '/index.php?/api/v2/';
 }
@@ -39,7 +40,8 @@ TestRail.prototype.apiPost = function (apiMethod, body, queryVariables, callback
   return this._callAPI('post', url, queryVariables, body, callback);
 };
 
-TestRail.prototype._callAPI = function (method, url, queryVariables, body, callback) {
+TestRail.prototype._callAPI = function (method, url, queryVariables, body, callback, retries) {
+  var self = this;
   if(queryVariables != null) {
     url += '&' + qs.stringify(queryVariables);
   }
@@ -58,18 +60,25 @@ TestRail.prototype._callAPI = function (method, url, queryVariables, body, callb
   }
 
   if (typeof callback === 'function') {
-    return request[method](requestArguments, function(err, res, body) {
+    return request[method](requestArguments, function(err, res, responseBody) {
       if(err) {
         return callback(err);
       }
+      if (res.statusCode == 502) {
+        retries = retries ? retries - 1 : self.retries;
+        if (retries > 1) {
+          console.log(`!Fault on ${url}. Retries left: ${retries}`);
+          return TestRail.prototype._callAPI.call(self, method, url, queryVariables, body, callback, retries);
+        }
+      }
       if(res.statusCode != 200) {
-        var errData = body;
+        var errData = responseBody;
         try {
-          errData = JSON.parse(body);
+          errData = JSON.parse(responseBody);
         } catch (err) {}
         return callback(errData);
       }
-      return callback(null, JSON.parse(body));
+      return callback(null, JSON.parse(responseBody));
     }).auth(this.user, this.password, true);
   }
   else {
