@@ -1,17 +1,24 @@
 var request = require('request');
 var qs = require('querystring');
 var Promise = require('bluebird');
-
+var EventEmitter = require('events');
 
 // ----- API Reference: http://docs.gurock.com/testrail-api2/start -----
 
-function TestRail(options) {
-  this.host = options.host;
-  this.user = options.user;
-  this.password = options.password;
-  this.retries = options.retries;
+class TestRail extends EventEmitter {
+  constructor(options) {
+    super(options);
+    this.host = options.host;
+    this.user = options.user;
+    this.password = options.password;
+    this.retries = options.retries;
 
-  this.uri = '/index.php?/api/v2/';
+    this.uri = '/index.php?/api/v2/';
+  }
+
+  emitFault(url, retries) {
+    this.emit('fault', url, retries);
+  }
 }
 
 TestRail.prototype.apiGet = function (apiMethod, queryVariables, callback) {
@@ -67,15 +74,12 @@ TestRail.prototype._callAPI = function (method, url, queryVariables, body, callb
       if (res.statusCode == 502) {
         retries = retries ? retries - 1 : self.retries;
         if (retries > 1) {
-          console.log(`!Fault on ${url}. Retries left: ${retries}`);
+          self.emitFault(url, retries);
           return TestRail.prototype._callAPI.call(self, method, url, queryVariables, body, callback, retries);
         }
       }
       if(res.statusCode != 200) {
         var errData = responseBody;
-        try {
-          errData = JSON.parse(responseBody);
-        } catch (err) {}
         return callback(errData);
       }
       return callback(null, JSON.parse(responseBody));
@@ -89,9 +93,6 @@ TestRail.prototype._callAPI = function (method, url, queryVariables, body, callb
         }
         if(res.statusCode != 200) {
           var errData = body;
-          try {
-            errData = JSON.parse(body);
-          } catch (err) {}
           return reject(errData);
         }
         return resolve(JSON.parse(body));
@@ -479,4 +480,4 @@ TestRail.prototype.getUsers = function (callback) {
 // ----------
 
 
-module.exports = TestRail;
+module.exports.TestrailApi = TestRail;
