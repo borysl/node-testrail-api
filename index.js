@@ -177,8 +177,18 @@ TestRail.prototype.deleteConfig = function (config_id, callback) {
 
 // ----- Milestones -----
 
-TestRail.prototype.getMilestone = function (id, callback) {
-  return this.apiGet('get_milestone/' + id, callback);
+TestRail.prototype.getMilestone = function (id, callback = () => {}) {
+  return new Promise((resolve, reject) => {
+    this.apiGet('get_milestone/' + id, (err, result) => {
+      if (err) {
+        reject(err);
+        callback(err);
+      } else {
+        resolve(result);
+        callback(null, result);
+      }
+    });
+  });
 };
 
 TestRail.prototype.getMilestones = function (project_id, filters, callback) {
@@ -313,15 +323,35 @@ TestRail.prototype.getResultsForCase = function (run_id, case_id, filters, callb
   }
 };
 
-TestRail.prototype.getResultsForRun = function (run_id, filters, callback) {
+TestRail.prototype.getResultsForRun = function (run_id, filters, callback = () => {}) {
   var uri = 'get_results_for_run/' + run_id;
 
   if(typeof filters == 'function') {
     callback = filters;
-    return this.apiGet(uri, callback);
+    return new Promise((resolve, reject) => {
+      this.apiGet(uri, (err, result) => {
+        if (err) {
+          reject(err);
+          callback(err);
+        } else {
+          resolve(result);
+          callback(null, result);
+        }
+      });
+    });
   }
   else {
-    return this.apiGet(uri, filters, callback);
+    return new Promise((resolve, reject) => {
+      this.apiGet(uri, filters, (err, result) => {
+        if (err) {
+          reject(err);
+          callback(err);
+        } else {
+          resolve(result);
+          callback(null, result);
+        }
+      });
+    });
   }
 };
 
@@ -353,15 +383,35 @@ TestRail.prototype.getRun = function (id, callback) {
   return this.apiGet('get_run/' + id, callback);
 };
 
-TestRail.prototype.getRuns = function (project_id, filters, callback) {
+TestRail.prototype.getRuns = function (project_id, filters, callback = () => {}) {
   var uri = 'get_runs/' + project_id;
 
   if(typeof filters == 'function') {
     callback = filters;
-    return this.apiGet(uri, callback);
+    return new Promise((resolve, reject) => {
+      this.apiGet(uri, (err, result) => {
+        if (err) {
+          reject(err);
+          callback(err);
+        } else {
+          resolve(result);
+          callback(null, result);
+        }
+      });
+    });
   }
   else {
-    return this.apiGet(uri, filters, callback);
+    return new Promise((resolve, reject) => {
+      this.apiGet(uri, filters, (err, result) => {
+        if (err) {
+          reject(err);
+          callback(err);
+        } else {
+          resolve(result);
+          callback(null, result);
+        }
+      });
+    });
   }
 };
 
